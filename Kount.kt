@@ -2,7 +2,8 @@ sealed class Komparison {
   class LessThan(val value: Int) : Komparison()
   class Exactly(val value: Int) : Komparison()
   class GreaterThan(val value: Int) : Komparison()
-  class Repeat(val everyX: Int, val forAMaximumOfYTimes: Int = 1) : Komparison()
+  class Repeat(val everyX: Int, val forAMaximumOfYTimes: Int) : Komparison()
+  class DoRepeat(val everyX: Int, val forAMaximumOfYTimes: Int) : Komparison()
 }
 
 interface Kountable {
@@ -11,16 +12,18 @@ interface Kountable {
   fun increment(key: String)
   fun decrement(key: String)
   fun exists(key: String): Boolean
-  fun matches(key: String, amount: Komparison): Boolean
   fun count(key: String): Int?
   fun debugKeys()
+  fun matches(key: String, amount: Komparison): Boolean
+  fun justMatch(key: String, amount: Komparison): Boolean
+  fun keys(): Map<String, Any?>
 }
 
 class Kount(private val sharedPreferences: SharedPreferences) : Kountable {
 
-  private val prefix: String = "SPK_"
+  private val prefix: String = "ZC_"
 
-  internal fun String.prefixed(): String {
+  private fun String.prefixed(): String {
     return "$prefix$this"
   }
 
@@ -28,7 +31,7 @@ class Kount(private val sharedPreferences: SharedPreferences) : Kountable {
     return sharedPreferences
   }
 
-  private fun keys(): Map<String, Any?> {
+  override fun keys(): Map<String, Any?> {
     return sharedPreferences.all.filter { it.key.startsWith(prefix) }
   }
 
@@ -66,8 +69,13 @@ class Kount(private val sharedPreferences: SharedPreferences) : Kountable {
     return sharedPreferences.contains(key.prefixed())
   }
 
-  override fun matches(key: String, amount: Komparison): Boolean {
+  private fun matches(key: String, amount: Komparison, autoIncrement: Boolean): Boolean {
     val value = count(key) ?: 0
+
+    if (value == 0 && amount is Komparison.DoRepeat) {
+      return true
+    }
+
     var matches = false
 
     when (amount) {
@@ -83,9 +91,26 @@ class Kount(private val sharedPreferences: SharedPreferences) : Kountable {
           matches = true
         }
       }
+      is Komparison.DoRepeat -> {
+        if (value > amount.everyX * amount.forAMaximumOfYTimes) {
+          matches = false
+        } else if (value % amount.everyX == 0) {
+          matches = true
+        }
+      }
     }
 
-    increment(key)
+    if (autoIncrement) {
+      increment(key)
+    }
     return matches
+  }
+
+  override fun matches(key: String, amount: Komparison): Boolean {
+    return matches(key, amount, true)
+  }
+
+  override fun justMatch(key: String, amount: Komparison): Boolean {
+    return matches(key, amount, false)
   }
 }
