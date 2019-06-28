@@ -72,38 +72,31 @@ class Kount(private val sharedPreferences: SharedPreferences) : Kountable {
   private fun matches(key: String, amount: Komparison, autoIncrement: Boolean): Boolean {
     val value = count(key) ?: 0
 
+    if (autoIncrement) {
+      increment(key)
+    }
+
     if (value == 0 && amount is Komparison.DoRepeat) {
       return true
     }
 
-    var matches = false
-
-    when (amount) {
-      is Komparison.Exactly -> matches = (value == amount.value)
-      is Komparison.LessThan -> matches = (value < amount.value)
-      is Komparison.GreaterThan -> matches = (value > amount.value)
+    return when (amount) {
+      is Komparison.Exactly -> (value == amount.value)
+      is Komparison.LessThan -> (value < amount.value)
+      is Komparison.GreaterThan -> (value > amount.value)
       is Komparison.Repeat -> {
         if (value <= 0 || amount.forAMaximumOfYTimes <= 0) {
-          matches = false
+          false
         } else if (value > amount.everyX * amount.forAMaximumOfYTimes) {
-          matches = false
-        } else if (value % amount.everyX == 0) {
-          matches = true
-        }
+          false
+        } else value % amount.everyX == 0
       }
       is Komparison.DoRepeat -> {
         if (value > amount.everyX * amount.forAMaximumOfYTimes) {
-          matches = false
-        } else if (value % amount.everyX == 0) {
-          matches = true
-        }
+          false
+        } else value % amount.everyX == 0
       }
     }
-
-    if (autoIncrement) {
-      increment(key)
-    }
-    return matches
   }
 
   override fun matches(key: String, amount: Komparison): Boolean {
