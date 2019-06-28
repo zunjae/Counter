@@ -50,7 +50,6 @@ Pull requests are not welcome
 ## TODO: 
 
 * Add a value change listener
-* Create a DoRepeat Komparison
 * Write tests (lol)
 
 ## License
