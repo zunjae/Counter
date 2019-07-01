@@ -54,4 +54,4 @@ Pull requests are not welcome
 
 ## License
 
-Lol licenses
+FFTPYMT: Feel free to pretend you made this
