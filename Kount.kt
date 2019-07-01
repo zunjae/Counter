@@ -3,7 +3,7 @@ sealed class Komparison {
   class Exactly(val value: Int) : Komparison()
   class GreaterThan(val value: Int) : Komparison()
   class Repeat(val everyX: Int, val forAMaximumOfYTimes: Int) : Komparison()
-  class DoRepeat(val everyX: Int, val forAMaximumOfYTimes: Int) : Komparison()
+  class DoRepeat(val everyX: Int, val forAMaximumOfYTimes: Int = Int.MAX_VALUE) : Komparison()
 }
 
 interface Kountable {
@@ -17,6 +17,9 @@ interface Kountable {
   fun matches(key: String, amount: Komparison): Boolean
   fun justMatch(key: String, amount: Komparison): Boolean
   fun keys(): Map<String, Any?>
+  fun markActionAsDone(key: String)
+  fun hasCompletedAction(key: String): Boolean
+  fun actionDoneDate(key: String): Date?
 }
 
 class Kount(private val sharedPreferences: SharedPreferences) : Kountable {
@@ -39,6 +42,23 @@ class Kount(private val sharedPreferences: SharedPreferences) : Kountable {
     keys().forEach {
       Log.i("Kount", "K: ${it.key} | V: ${it.value}")
     }
+  }
+
+  override fun markActionAsDone(key: String) {
+    sharedPreferences.edit().putLong(key.prefixed(), System.currentTimeMillis()).apply()
+  }
+
+  override fun hasCompletedAction(key: String): Boolean {
+    val value = sharedPreferences.getLong(key.prefixed(), Long.MIN_VALUE)
+    return value > 0
+  }
+
+  override fun actionDoneDate(key: String): Date? {
+    val date = sharedPreferences.getLong(key.prefixed(), Long.MIN_VALUE)
+    if (date == Long.MIN_VALUE) {
+      return null
+    }
+    return Date(date)
   }
 
   override fun deleteAll() {
